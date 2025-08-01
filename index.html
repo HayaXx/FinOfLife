@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceOfLife</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px;}
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        /* Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-gray-900 text-gray-200 flex justify-center items-start min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <div class="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-8">
+        
+        <div class="lg:col-span-3 space-y-8">
+            <header class="text-center">
+                <h1 class="font-orbitron text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    <i class="fas fa-wallet mr-2"></i>FinOfLife
+                </h1>
+                <p class="text-gray-400 mt-2">Kelola keuangan pribadi dengan mudah</p>
+            </header>
+            
+            <div id="cycle-total-card" class="hidden bg-purple-500/10 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6 text-center shadow-lg transition-all hover:scale-[1.01]">
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 text-center shadow-lg transition-all hover:scale-[1.01]">
+                <h2 class="text-gray-400 text-lg">Total Saldo</h2>
+                <p id="balance" class="text-4xl md:text-5xl font-bold mt-2 tracking-tighter">Rp0</p>
+                <div class="flex justify-center gap-4 mt-4">
+                    <button id="income-btn" class="bg-green-500/20 hover:bg-green-500/30 text-green-400 px-4 py-1 rounded-full text-sm flex items-center transition-all">
+                        <i class="fas fa-plus-circle mr-1"></i> Pemasukan
+                    </button>
+                    <button id="expense-btn" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-1 rounded-full text-sm flex items-center transition-all">
+                        <i class="fas fa-minus-circle mr-1"></i> Pengeluaran
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="bg-green-500/10 backdrop-blur-sm border border-green-500/30 rounded-2xl p-6 flex items-center gap-4 shadow-md transition-all hover:scale-[1.02]">
+                    <div class="text-3xl text-green-400"><i class="fas fa-arrow-down"></i></div>
+                    <div>
+                        <h4 class="text-gray-300">Total Pemasukan</h4>
+                        <p id="money-plus" class="text-2xl font-semibold text-green-400">+Rp0</p>
+                    </div>
+                </div>
+                <div class="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-2xl p-6 flex items-center gap-4 shadow-md transition-all hover:scale-[1.02]">
+                    <div class="text-3xl text-red-400"><i class="fas fa-arrow-up"></i></div>
+                    <div>
+                        <h4 class="text-gray-300">Total Pengeluaran</h4>
+                        <p id="money-minus" class="text-2xl font-semibold text-red-400">-Rp0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-lg transition-all hover:scale-[1.01]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Analisis Pengeluaran</h3>
+                    <select id="chart-period" class="bg-gray-700/50 border border-gray-600 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-cyan-400 outline-none transition">
+                        <option value="month">Bulan Ini</option>
+                        <option value="year">Tahun Ini</option>
+                        <option value="all">Semua</option>
+                    </select>
+                </div>
+                <div class="h-64 md:h-80"><canvas id="expenseChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-8">
+            
+            <div id="transaction-form" class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-lg transition-all hover:scale-[1.01]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Tambah Transaksi</h3>
+                    <div class="flex gap-2">
+                        <button id="form-income" class="px-3 py-1 text-xs rounded-full bg-green-500/20 text-green-400 font-medium">Pemasukan</button>
+                        <button id="form-expense" class="px-3 py-1 text-xs rounded-full bg-red-500/20 text-red-400 font-medium">Pengeluaran</button>
+                    </div>
+                </div>
+                <form id="form" class="space-y-4">
+                    <div>
+                        <label for="text" class="text-sm font-medium text-gray-400">Keterangan</label>
+                        <input type="text" id="text" placeholder="Contoh: Gaji Bulanan, Makan Siang" required class="mt-1 w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="amount" class="text-sm font-medium text-gray-400">Jumlah</label>
+                            <div class="relative mt-1">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">Rp</span>
+                                <input type="text" id="amount" placeholder="250.000" required class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-8 pr-3 py-2 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="date" class="text-sm font-medium text-gray-400">Tanggal</label>
+                            <input type="date" id="date" required class="mt-1 w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition appearance-none">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="category" class="text-sm font-medium text-gray-400">Kategori</label>
+                         <select id="category" required class="mt-1 w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition">
+                            <option value="Gaji">Gaji</option>
+                            <option value="Investasi">Investasi</option>
+                            <option value="Bonus">Bonus</option>
+                            <option value="Lainnya">Lainnya</option>
+                            <optgroup label="Pengeluaran">
+                                <option value="Makanan">Makanan</option>
+                                <option value="Transportasi">Transportasi</option>
+                                <option value="Tagihan">Tagihan</option>
+                                <option value="Hiburan">Hiburan</option>
+                                <option value="Belanja">Belanja</option>
+                                <option value="Kesehatan">Kesehatan</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <button class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-900 font-bold py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center">
+                        <i class="fas fa-plus-circle mr-2"></i>Tambah Transaksi
+                    </button>
+                </form>
+            </div>
+            
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-lg transition-all hover:scale-[1.01]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Riwayat Transaksi</h3>
+                    <div class="relative">
+                        <input type="search" id="search" placeholder="🔍 Cari transaksi..." class="w-40 bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-1 pl-8 text-sm focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition">
+                    </div>
+                </div>
+                <div class="flex gap-2 mb-3 overflow-x-auto pb-2">
+                    <button data-filter="all" class="filter-btn px-3 py-1 text-xs rounded-full bg-cyan-500/20 text-cyan-400 font-medium whitespace-nowrap">Semua</button>
+                    <button data-filter="income" class="filter-btn px-3 py-1 text-xs rounded-full bg-green-500/20 text-green-400 font-medium whitespace-nowrap">Pemasukan</button>
+                    <button data-filter="expense" class="filter-btn px-3 py-1 text-xs rounded-full bg-red-500/20 text-red-400 font-medium whitespace-nowrap">Pengeluaran</button>
+                    <button data-filter="today" class="filter-btn px-3 py-1 text-xs rounded-full bg-purple-500/20 text-purple-400 font-medium whitespace-nowrap">Hari Ini</button>
+                    <button data-filter="month" class="filter-btn px-3 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400 font-medium whitespace-nowrap">Bulan Ini</button>
+                </div>
+                <ul id="list" class="space-y-3 max-h-80 overflow-y-auto pr-2">
+                    <li class="text-center py-8 text-gray-500">
+                        <i class="fas fa-exchange-alt text-3xl mb-2"></i>
+                        <p>Tidak ada transaksi</p>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-lg transition-all hover:scale-[1.01]">
+                <div id="calendar-container" class="[&>div]:bg-transparent [&>div]:shadow-none [&_.vanilla-calendar-week]:text-gray-400 [&_.vanilla-calendar-day__btn]:text-gray-200 [&_.vanilla-calendar-day__btn_today]:!bg-cyan-500/50 [&_.vanilla-calendar-month]:text-cyan-400 [&_.vanilla-calendar-arrow]:text-cyan-400">
+                </div>
+                 <div class="mt-6 pt-6 border-t border-white/20">
+                    <h3 class="text-xl font-semibold mb-4">Kelola Data</h3>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button id="export-btn" class="flex-1 text-center bg-gray-600/50 hover:bg-gray-500/50 text-gray-200 font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center gap-2">
+                            <i class="fas fa-file-export"></i> Ekspor
+                        </button>
+                        <label for="import-file" class="flex-1 text-center bg-gray-600/50 hover:bg-gray-500/50 text-gray-200 font-semibold py-2 px-4 rounded-lg transition cursor-pointer flex items-center justify-center gap-2">
+                            <i class="fas fa-file-import"></i> Impor
+                        </label>
+                        <button id="reset-btn" class="flex-1 text-center bg-gray-600/50 hover:bg-gray-500/50 text-gray-200 font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center gap-2">
+                            <i class="fas fa-trash-alt"></i> Reset
+                        </button>
+                        <input type="file" id="import-file" class="hidden" accept=".json">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 hidden">
+        <div class="w-full max-w-md bg-slate-800 border border-cyan-400/50 rounded-2xl p-6 shadow-lg">
+            <h3 class="text-xl font-semibold mb-4">Edit Transaksi</h3>
+            <form id="editForm" class="space-y-4">
+                 <input type="hidden" id="edit-id">
+                 <div>
+                    <label for="edit-text" class="text-sm font-medium text-gray-400">Keterangan</label>
+                    <input type="text" id="edit-text" required class="mt-1 w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition">
+                </div>
+                 <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="edit-amount" class="text-sm font-medium text-gray-400">Jumlah</label>
+                        <div class="relative mt-1">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">Rp</span>
+                            <input type="text" id="edit-amount" required class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-8 pr-3 py-2 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="edit-date" class="text-sm font-medium text-gray-400">Tanggal</label>
+                        <input type="date" id="edit-date" required class="mt-1 w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition appearance-none">
+                    </div>
+                </div>
+                 <div>
+                    <label for="edit-category" class="text-sm font-medium text-gray-400">Kategori</label>
+                     <select id="edit-category" required class="mt-1 w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition">
+                        </select>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" id="closeModalBtn" class="w-full bg-gray-600/50 hover:bg-gray-500/50 text-gray-200 font-bold py-2 rounded-lg transition flex items-center justify-center gap-2">
+                        <i class="fas fa-times"></i> Batal
+                    </button>
+                    <button type="submit" class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-900 font-bold py-2 rounded-lg hover:opacity-90 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="confirmModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-50 hidden">
+        <div class="w-full max-w-md bg-slate-800 border border-red-400/50 rounded-2xl p-6 shadow-lg">
+            <h3 class="text-xl font-semibold mb-4 text-red-400 flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i> Konfirmasi
+            </h3>
+            <p id="confirm-message" class="text-gray-300 mb-6">Apakah Anda yakin ingin menghapus semua data transaksi?</p>
+            <div class="flex gap-3">
+                <button id="cancelConfirmBtn" class="w-full bg-gray-600/50 hover:bg-gray-500/50 text-gray-200 font-bold py-2 rounded-lg transition">
+                    Batal
+                </button>
+                <button id="confirmActionBtn" class="w-full bg-red-500/90 hover:bg-red-500 text-white font-bold py-2 rounded-lg transition">
+                    Ya, Hapus
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <link href="https://cdn.jsdelivr.net/npm/vanilla-calendar-pro/build/vanilla-calendar.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vanilla-calendar-pro/build/vanilla-calendar.min.js" defer></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // === DOM Elements ===
+    const balance = document.getElementById('balance');
+    const money_plus = document.getElementById('money-plus');
+    const money_minus = document.getElementById('money-minus');
+    const list = document.getElementById('list');
+    const form = document.getElementById('form');
+    const text = document.getElementById('text');
+    const category = document.getElementById('category');
+    const amount = document.getElementById('amount');
+    const dateInput = document.getElementById('date');
+    const search = document.getElementById('search');
+    const cycleTotalCard = document.getElementById('cycle-total-card');
+    const incomeBtn = document.getElementById('income-btn');
+    const expenseBtn = document.getElementById('expense-btn');
+    const formIncomeBtn = document.getElementById('form-income');
+    const formExpenseBtn = document.getElementById('form-expense');
+    const chartPeriod = document.getElementById('chart-period');
+    const resetBtn = document.getElementById('reset-btn');
+
+    // Modal Elements
+    const modal = document.getElementById('editModal');
+    const confirmModal = document.getElementById('confirmModal');
+    const editForm = document.getElementById('editForm');
+    const editId = document.getElementById('edit-id');
+    const editText = document.getElementById('edit-text');
+    const editCategory = document.getElementById('edit-category');
+    const editAmount = document.getElementById('edit-amount');
+    const editDate = document.getElementById('edit-date');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+    const confirmMessage = document.getElementById('confirm-message');
+
+    // Data Management
+    const exportBtn = document.getElementById('export-btn');
+    const importFile = document.getElementById('import-file');
+    
+    // Chart
+    const expenseChartCanvas = document.getElementById('expenseChart').getContext('2d');
+    let expenseChart;
+
+    // === App State ===
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    let currentFilter = 'all';
+    
+    // Format currency to IDR
+    const formatIDR = (number) => {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(number).replace('Rp', 'Rp');
+    };
+
+    // Format input value to number
+    const formatInputToNumber = (input) => {
+        return parseInt(input.replace(/[^0-9]/g, '')) || 0;
+    };
+
+    // Format number to input value
+    const formatNumberToInput = (number) => {
+        return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
+
+    // Initialize edit category dropdown
+    editCategory.innerHTML = category.innerHTML;
+
+    // === Main Functions ===
+    const addTransaction = (e) => {
+        e.preventDefault();
+        if ([text.value.trim(), amount.value.trim(), dateInput.value.trim()].includes('')) return;
+        
+        const amountValue = formatInputToNumber(amount.value);
+        
+        transactions.push({
+            id: generateID(),
+            text: text.value,
+            category: category.value,
+            amount: amountValue,
+            date: dateInput.value
+        });
+        
+        updateLocalStorage();
+        init();
+        form.reset();
+        dateInput.value = new Date().toISOString().split('T')[0];
+        
+        // Show success animation
+        const formElement = document.getElementById('transaction-form');
+        formElement.classList.add('animate-pulse');
+        setTimeout(() => {
+            formElement.classList.remove('animate-pulse');
+        }, 1000);
+    };
+
+    const updateTransaction = (e) => {
+        e.preventDefault();
+        const transactionId = +editId.value;
+        const amountValue = formatInputToNumber(editAmount.value);
+        
+        transactions = transactions.map(t => 
+            t.id === transactionId ? 
+            { ...t, text: editText.value, category: editCategory.value, amount: amountValue, date: editDate.value } 
+            : t
+        );
+        
+        updateLocalStorage();
+        closeModal();
+        init();
+    };
+
+    const init = () => {
+        list.innerHTML = '';
+        const searchTerm = search.value.toLowerCase();
+        
+        // Sort transactions by date, newest first
+        const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Filter transactions based on search and current filter
+        let filteredTransactions = sortedTransactions.filter(t => 
+            t.text.toLowerCase().includes(searchTerm) || 
+            t.category.toLowerCase().includes(searchTerm)
+        );
+        
+        // Apply additional filters
+        const today = new Date().toISOString().split('T')[0];
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        
+        switch(currentFilter) {
+            case 'income':
+                filteredTransactions = filteredTransactions.filter(t => t.amount > 0);
+                break;
+            case 'expense':
+                filteredTransactions = filteredTransactions.filter(t => t.amount < 0);
+                break;
+            case 'today':
+                filteredTransactions = filteredTransactions.filter(t => t.date === today);
+                break;
+            case 'month':
+                filteredTransactions = filteredTransactions.filter(t => {
+                    const date = new Date(t.date);
+                    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+                });
+                break;
+        }
+        
+        if (filteredTransactions.length === 0) {
+            list.innerHTML = `
+                <li class="text-center py-8 text-gray-500">
+                    <i class="fas fa-exchange-alt text-3xl mb-2"></i>
+                    <p>Tidak ada transaksi</p>
+                </li>
+            `;
+        } else {
+            filteredTransactions.forEach(addTransactionDOM);
+        }
+        
+        updateValues();
+        renderChart();
+        calculateAndDisplayCycleTotal();
+    };
+    
+    // === DOM MANIPULATION ===
+    const addTransactionDOM = (transaction) => {
+        const sign = transaction.amount < 0 ? '-' : '+';
+        const amountColor = transaction.amount < 0 ? 'text-red-400' : 'text-green-400';
+        const borderColor = transaction.amount < 0 ? 'border-red-500/50' : 'border-green-500/50';
+        const categoryColor = transaction.amount < 0 ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400';
+        
+        const item = document.createElement('li');
+        item.className = `flex items-center justify-between bg-gray-800/50 p-3 rounded-lg border-l-4 ${borderColor} transition-transform hover:scale-[1.02]`;
+        
+        item.innerHTML = `
+            <div class="flex-1 mr-3">
+                <p class="font-semibold text-gray-100">${transaction.text}</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs px-2 py-0.5 rounded-full ${categoryColor}">${transaction.category}</span>
+                    <span class="text-xs text-gray-400">${formatDateID(transaction.date)}</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="font-bold ${amountColor}">${sign}${formatIDR(Math.abs(transaction.amount))}</p>
+                <div class="text-xs text-gray-500 mt-1">
+                    <button class="hover:text-yellow-400" onclick="openModal(${transaction.id})"><i class="fas fa-edit"></i></button>
+                    <button class="ml-2 hover:text-red-400" onclick="removeTransaction(${transaction.id})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `;
+        list.appendChild(item);
+    };
+
+    // Format date to Indonesian format
+    const formatDateID = (dateString) => {
+        const date = new Date(dateString);
+        const options = { day: 'numeric', month: 'short' };
+        return date.toLocaleDateString('id-ID', options);
+    };
+
+    const updateValues = () => {
+        const amounts = transactions.map(t => t.amount);
+        const total = amounts.reduce((acc, item) => (acc += item), 0);
+        const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
+        const expense = Math.abs(amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0));
+
+        balance.innerText = `${total < 0 ? '-' : ''}${formatIDR(Math.abs(total))}`;
+        money_plus.innerText = `+${formatIDR(income)}`;
+        money_minus.innerText = `-${formatIDR(expense)}`;
+    };
+
+    const calculateAndDisplayCycleTotal = () => {
+        const today = new Date();
+        const dayOfMonth = today.getDate();
+        
+        cycleTotalCard.classList.remove('hidden');
+
+        if (dayOfMonth === 28) {
+            const endDate = new Date(today);
+            endDate.setHours(23, 59, 59, 999);
+
+            const startDate = new Date(today);
+            startDate.setMonth(startDate.getMonth() - 1);
+            startDate.setDate(28);
+            startDate.setHours(0, 0, 0, 0);
+
+            const cycleExpenses = transactions
+                .filter(t => {
+                    const tDate = new Date(t.date);
+                    return t.amount < 0 && tDate >= startDate && tDate < endDate;
+                })
+                .reduce((acc, t) => acc + t.amount, 0);
+
+            cycleTotalCard.innerHTML = `
+                <h2 class="text-lg text-purple-300 font-semibold">Total Pengeluaran Siklus Ini</h2>
+                <p class="text-3xl font-bold mt-1 text-white">-${formatIDR(Math.abs(cycleExpenses))}</p>
+                <p class="text-xs text-gray-400 mt-1">Periode: ${formatDateID(startDate)} - ${formatDateID(endDate)}</p>
+            `;
+        } else {
+             const next28 = new Date(today);
+             if (dayOfMonth > 28) {
+                 next28.setMonth(today.getMonth() + 1);
+             }
+             next28.setDate(28);
+             const daysRemaining = Math.ceil((next28 - today) / (1000 * 60 * 60 * 24));
+             cycleTotalCard.innerHTML = `
+                <h2 class="text-lg text-purple-300">Total Siklus Berikutnya</h2>
+                <p class="text-2xl font-bold mt-1 text-white">${daysRemaining} hari lagi</p>
+                <p class="text-xs text-gray-400 mt-1">Total pengeluaran akan dihitung pada tanggal 28.</p>
+             `;
+        }
+    };
+
+    // --- CHART LOGIC ---
+    const renderChart = () => {
+        if (expenseChart) {
+            expenseChart.destroy();
+        }
+        
+        const period = chartPeriod.value;
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        
+        // Filter transactions based on period
+        let filteredTransactions = transactions.filter(t => t.amount < 0); // Only expenses
+        
+        if (period === 'month') {
+            filteredTransactions = filteredTransactions.filter(t => {
+                const date = new Date(t.date);
+                return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            });
+        } else if (period === 'year') {
+            filteredTransactions = filteredTransactions.filter(t => {
+                const date = new Date(t.date);
+                return date.getFullYear() === currentYear;
+            });
+        }
+        
+        // Group by category
+        const categories = {};
+        filteredTransactions.forEach(t => {
+            if (!categories[t.category]) {
+                categories[t.category] = 0;
+            }
+            categories[t.category] += Math.abs(t.amount);
+        });
+        
+        // Sort categories by amount (descending)
+        const sortedCategories = Object.entries(categories)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 7); // Limit to top 7 categories
+        
+        const labels = sortedCategories.map(item => item[0]);
+        const data = sortedCategories.map(item => item[1]);
+        
+        // Generate colors based on number of categories
+        const backgroundColors = labels.map((_, i) => {
+            const hue = (i * 50) % 360;
+            return `hsla(${hue}, 70%, 50%, 0.7)`;
+        });
+        
+        expenseChart = new Chart(expenseChartCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderColor: 'rgba(30, 41, 59, 0.8)',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#E5E7EB',
+                            font: {
+                                family: 'Inter'
+                            },
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += formatIDR(context.raw);
+                                return label;
+                            }
+                        }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    };
+
+    // --- ACTIONS & HELPERS ---
+    window.removeTransaction = id => {
+        transactions = transactions.filter(t => t.id !== id);
+        updateLocalStorage();
+        init();
+    };
+    
+    window.openModal = id => {
+        const transaction = transactions.find(t => t.id === id);
+        if (!transaction) return;
+        
+        modal.classList.remove('hidden');
+        editId.value = transaction.id;
+        editText.value = transaction.text;
+        editCategory.value = transaction.category;
+        editAmount.value = formatNumberToInput(Math.abs(transaction.amount));
+        editDate.value = transaction.date;
+    };
+    
+    const closeModal = () => modal.classList.add('hidden');
+    const closeConfirmModal = () => confirmModal.classList.add('hidden');
+    
+    const generateID = () => Date.now() + Math.floor(Math.random() * 1000);
+    const updateLocalStorage = () => localStorage.setItem('transactions', JSON.stringify(transactions));
+
+    // Format amount input with thousand separators
+    amount.addEventListener('input', (e) => {
+        const value = e.target.value.replace(/[^0-9]/g, '');
+        if (value) {
+            e.target.value = formatNumberToInput(parseInt(value));
+        } else {
+            e.target.value = '';
+        }
+    });
+    
+    // Same for edit amount input
+    editAmount.addEventListener('input', (e) => {
+        const value = e.target.value.replace(/[^0-9]/g, '');
+        if (value) {
+            e.target.value = formatNumberToInput(parseInt(value));
+        } else {
+            e.target.value = '';
+        }
+    });
+
+    // Set form to income mode
+    const setIncomeMode = () => {
+        formIncomeBtn.classList.add('bg-green-500/30', 'text-green-400');
+        formExpenseBtn.classList.remove('bg-red-500/30', 'text-red-400');
+        category.value = 'Gaji';
+        amount.placeholder = '2.500.000';
+    };
+    
+    // Set form to expense mode
+    const setExpenseMode = () => {
+        formExpenseBtn.classList.add('bg-red-500/30', 'text-red-400');
+        formIncomeBtn.classList.remove('bg-green-500/30', 'text-green-400');
+        category.value = 'Makanan';
+        amount.placeholder = '25.000';
+    };
+
+    // Reset all data
+    const resetData = () => {
+        showConfirmModal(
+            'Apakah Anda yakin ingin menghapus semua data transaksi? Tindakan ini tidak dapat dibatalkan.',
+            () => {
+                transactions = [];
+                updateLocalStorage();
+                init();
+                closeConfirmModal();
+            }
+        );
+    };
+
+    // Show confirmation modal
+    const showConfirmModal = (message, callback) => {
+        confirmMessage.textContent = message;
+        confirmModal.classList.remove('hidden');
+        
+        confirmActionBtn.onclick = () => {
+            callback();
+            confirmActionBtn.onclick = null;
+        };
+    };
+
+    // Export data
+    const exportData = () => {
+        const dataStr = JSON.stringify(transactions, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const exportFileDefaultName = `fintrack-export-${new Date().toISOString().split('T')[0]}.json`;
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    };
+
+    // Import data
+    const importData = (file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                showConfirmModal(
+                    `Anda akan mengimpor ${importedData.length} transaksi. Lanjutkan?`,
+                    () => {
+                        transactions = importedData;
+                        updateLocalStorage();
+                        init();
+                        closeConfirmModal();
+                    }
+                );
+            } catch (error) {
+                alert('File tidak valid. Silakan pilih file export yang benar.');
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    // === EVENT LISTENERS ===
+    form.addEventListener('submit', addTransaction);
+    editForm.addEventListener('submit', updateTransaction);
+    search.addEventListener('input', init);
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelConfirmBtn.addEventListener('click', closeConfirmModal);
+    modal.addEventListener('click', e => e.target === modal && closeModal());
+    confirmModal.addEventListener('click', e => e.target === confirmModal && closeConfirmModal());
+    
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentFilter = btn.dataset.filter;
+            document.querySelectorAll('.filter-btn').forEach(b => 
+                b.classList.remove('bg-cyan-500/20', 'text-cyan-400')
+            );
+            if (currentFilter !== 'all') {
+                btn.classList.add(
+                    currentFilter === 'income' ? 'bg-green-500/20' : 
+                    currentFilter === 'expense' ? 'bg-red-500/20' :
+                    currentFilter === 'today' ? 'bg-purple-500/20' :
+                    'bg-yellow-500/20',
+                    currentFilter === 'income' ? 'text-green-400' : 
+                    currentFilter === 'expense' ? 'text-red-400' :
+                    currentFilter === 'today' ? 'text-purple-400' :
+                    'text-yellow-400'
+                );
+            }
+            init();
+        });
+    });
+    
+    // Income/Expense buttons
+    incomeBtn.addEventListener('click', setIncomeMode);
+    expenseBtn.addEventListener('click', setExpenseMode);
+    formIncomeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setIncomeMode();
+    });
+    formExpenseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setExpenseMode();
+    });
+    
+    // Chart period change
+    chartPeriod.addEventListener('change', renderChart);
+    
+    // Data management
+    exportBtn.addEventListener('click', exportData);
+    importFile.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            importData(e.target.files[0]);
+            e.target.value = ''; // Reset input
+        }
+    });
+    resetBtn.addEventListener('click', resetData);
+
+    // === INITIALIZATION ===
+    dateInput.value = new Date().toISOString().split('T')[0];
+    const calendar = new VanillaCalendar('#calendar-container');
+    calendar.init();
+    setIncomeMode();
+    init();
+});
+
+// Helper functions for inline event handlers
+window.removeTransaction = (id) => {
+    document.dispatchEvent(new CustomEvent('DOMContentLoaded'));
+    const transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    const updatedTransactions = transactions.filter(t => t.id !== id);
+    localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+    window.location.reload();
+};
+
+window.openModal = (id) => {
+    document.dispatchEvent(new CustomEvent('DOMContentLoaded'));
+    const modal = document.getElementById('editModal');
+    const editId = document.getElementById('edit-id');
+    const editText = document.getElementById('edit-text');
+    const editCategory = document.getElementById('edit-category');
+    const editAmount = document.getElementById('edit-amount');
+    const editDate = document.getElementById('edit-date');
+    
+    const transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    const transaction = transactions.find(t => t.id === id);
+    
+    if (transaction) {
+        modal.classList.remove('hidden');
+        editId.value = transaction.id;
+        editText.value = transaction.text;
+        editCategory.value = transaction.category;
+        editAmount.value = Math.abs(transaction.amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        editDate.value = transaction.date;
+    }
+};
+</script>
+
+</body>
+</html>
